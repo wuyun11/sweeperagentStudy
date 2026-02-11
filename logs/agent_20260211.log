@@ -1,0 +1,5 @@
+2026-02-11 16:50:19,608 - agent - INFO - logger_hander.py:68 - 测试日志
+2026-02-11 16:50:19,609 - agent - ERROR - logger_hander.py:69 - 测试错误
+2026-02-11 16:50:19,609 - agent - WARNING - logger_hander.py:70 - 测试警告
+2026-02-11 16:50:19,609 - agent - DEBUG - logger_hander.py:71 - 测试调试
+2026-02-11 16:50:19,609 - agent - CRITICAL - logger_hander.py:72 - 测试严重
