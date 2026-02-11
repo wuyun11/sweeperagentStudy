@@ -1,3 +1,4 @@
 .idea/
 chroma_db/
+__pycache__/
 md5.text
