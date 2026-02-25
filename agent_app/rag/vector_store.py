@@ -1,3 +1,6 @@
+"""
+向量存储服务：Chroma 向量库的封装，支持从本地数据目录加载文档并检索。
+"""
 import os
 
 from langchain_chroma import Chroma
@@ -11,12 +14,10 @@ from agent_app.utils.file_handler import pdf_loader, txt_loader, list_dir_with_a
 from agent_app.utils.logger_handler import logger
 from agent_app.utils.path_tool import get_abs_path
 
-"""  
-向量存储服务
-"""
-
 
 class VectorStoreService:
+    """基于 Chroma 的向量存储与检索服务。"""
+
     def __init__(self):
         self.vector_store = Chroma(
             collection_name=chroma_config["collection_name"],
@@ -30,22 +31,12 @@ class VectorStoreService:
             length_function=len,
         )
 
-    """
-    获取检索器
-    :return: 检索器
-    """
-
     def get_retriever(self) -> VectorStoreRetriever:
+        """返回向量检索器，用于根据 query 检索文档。"""
         return self.vector_store.as_retriever(search_kwargs={"k": chroma_config["k"]})
 
-    """
-    从数据文件夹内加载数据文件
-    先检查md5值
-    如果md5值不存在,则加载文件,计算md5值,存入md5.text文件
-    如果md5值存在,则跳过
-    """
-
     def load_document(self):
+        """从配置的数据目录加载文件并写入向量库；按文件 MD5 去重，已存在则跳过。"""
 
         def check_md5_hex(md5_for_check: str) -> bool:
             md5_hex_store_path = get_abs_path(chroma_config["md5_hex_store"])
@@ -103,13 +94,14 @@ class VectorStoreService:
                     logger.error(f"[加载知识库]文件{path}加载失败: {str(e)}", exc_info=True)
 
         if skipped_existing == len(allowed_file_path) and allowed_file_path:
-            logger.info("[加载知识库]当前所有文件均已存在于知识库内，无需加载")
+            logger.info("[加载知识库]当前所有文件均已存在于知识库内，无需加载\n")
+
 
 if __name__ == "__main__":
     vector_store_service = VectorStoreService()
     vector_store_service.load_document()
     retriever = vector_store_service.get_retriever()
-    res = retriever.invoke("扫地机器人有哪些品牌？")
+    res = retriever.invoke("首次使用扫地机器人需要做什么？")
     for r in res:
         print(r.page_content)
-        print("-"*20)
+        print("-" * 20)

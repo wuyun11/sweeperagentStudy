@@ -1,12 +1,26 @@
 """
-日志工具
+日志工具：按日期写文件、控制台彩色输出，提供统一 get_logger。
+级别由 config_handler 提供的 logging_config 决定，未配置时使用下方默认常量。
 """
 import logging
 import os
 import sys
 from datetime import datetime
 
+from agent_app.utils.config_handler import logging_config
 from agent_app.utils.path_tool import get_abs_path
+
+# 默认级别（logging_config 中未提供或无效时使用）
+DEFAULT_CONSOLE_LEVEL = logging.INFO
+DEFAULT_FILE_LEVEL = logging.DEBUG
+
+_LEVEL_NAMES = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
 
 # 日志保存的根目录
 LOG_ROOT_DIR = get_abs_path("logs")
@@ -16,11 +30,11 @@ os.makedirs(LOG_ROOT_DIR, exist_ok=True)
 
 # 控制台按级别着色（ANSI 码，Windows 10+ / 现代终端均支持）
 _COLORS = {
-    logging.DEBUG: "\033[36m",    # 青色
-    logging.INFO: "\033[0m",      # 默认（黑/白）
+    logging.DEBUG: "\033[36m",  # 青色
+    logging.INFO: "\033[0m",  # 默认（黑/白）
     logging.WARNING: "\033[33m",  # 黄色
-    logging.ERROR: "\033[31m",    # 红色
-    logging.CRITICAL: "\033[35m", # 紫红
+    logging.ERROR: "\033[31m",  # 红色
+    logging.CRITICAL: "\033[35m",  # 紫红
 }
 _RESET = "\033[0m"
 
@@ -38,28 +52,28 @@ class ColoredConsoleFormatter(logging.Formatter):
 LOG_FMT = "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
 DEFAULT_LOG_FORMAT = logging.Formatter(LOG_FMT)
 
-"""
-获取日志记录器
-:param name: 日志记录器名称
-:param console_level: 控制台日志级别
-:param file_level: 文件日志级别
-:param log_file: 日志文件路径
-:return: 日志记录器
-"""
-
 
 def get_logger(
         name: str = "agent",
-        console_level: int = logging.INFO,
-        file_level: int = logging.DEBUG,
+        console_level: int = None,
+        file_level: int = None,
         log_file=None,
 ) -> logging.Logger:
+    """获取或创建 Logger，支持控制台（彩色）与按日期的文件输出；已存在 handler 则直接返回。
+    级别优先用入参，否则从 config_handler.logging_config 读取，再否则用模块默认 DEFAULT_*。"""
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
     # 避免重复添加Handler
     if logger.handlers:
         return logger
+
+    if console_level is None:
+        key = (logging_config.get("console_level") or "INFO").upper().strip()
+        console_level = _LEVEL_NAMES.get(key, DEFAULT_CONSOLE_LEVEL)
+    if file_level is None:
+        key = (logging_config.get("file_level") or "DEBUG").upper().strip()
+        file_level = _LEVEL_NAMES.get(key, DEFAULT_FILE_LEVEL)
 
     # 输出到 stdout，避免 PyCharm 把 stderr 整段标红；颜色由 ANSI 码控制
     console_handler = logging.StreamHandler(sys.stdout)
@@ -82,7 +96,5 @@ def get_logger(
     return logger
 
 
-"""  
-全局变量：定义日志记录器
-"""
+# 全局默认 Logger，供各模块使用
 logger = get_logger()
